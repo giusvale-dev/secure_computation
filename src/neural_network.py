@@ -2,69 +2,70 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from constants import TRAINED_MODEL_PATH, classes
-from sklearn.metrics import confusion_matrix, classification_report
+from constants import TRAINED_MODEL_PATH
 
 
 class Net(nn.Module):
     def __init__(self):
+        #torch.use_deterministic_algorithms(True)
         super().__init__()
         self.flatten = nn.Flatten()
         self.fc1 = nn.Linear(3 * 32 * 32, 512)
+      #  self.dropout1 = nn.Dropout(0.5)
         self.fc2 = nn.Linear(512, 256)
+      #  self.dropout2 = nn.Dropout(0.3)
         self.fc3 = nn.Linear(256, 1)
-
         self.relu = nn.ReLU()
         
-
-
     def forward(self, x):
         x = self.flatten(x)
         x = self.relu(self.fc1(x))     # ReLU after fc1
+       # x = self.dropout1(x)
         x = self.relu(self.fc2(x))     # ReLU after fc2
+       # x = self.dropout2(x)
         x = self.fc3(x)
-       # x = self.sigmoid(x)            # Sigmoid at output
         return x
 
-    def train_network(self, trainloader, optimizer, criterion):
+    def train_network(self, trainloader, optimizer, criterion, num_epochs=100):
+
         self.train()
-        for epoch in range(2):  # loop over the dataset multiple times
+        train_losses = []
+
+        for epoch in range(num_epochs):
             running_loss = 0.0
+            self.train()
 
             for i, data in enumerate(trainloader, 0):
-                # get the inputs; data is a list of [inputs, labels]
                 inputs, labels = data
-
-                # zero the parameter gradients
-                optimizer.zero_grad()
-
-                # forward + backward + optimize
-                outputs = self(inputs)
                 labels = labels.float().unsqueeze(1)
+
+                optimizer.zero_grad()
+                outputs = self(inputs)
                 loss = criterion(outputs, labels)
                 loss.backward()
                 optimizer.step()
 
-                # print statistics
                 running_loss += loss.item()
-                if i % 2000 == 1999:    # print every 2000 mini-batches
-                    print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / 2000:.3f}')
-                    running_loss = 0.0
+
+            # Record average training loss
+            avg_train_loss = running_loss / len(trainloader)
+            train_losses.append(avg_train_loss)
+
+            print(f"Epoch {epoch+1}: Train Loss = {avg_train_loss:.4f}")
 
         torch.save(self.state_dict(), TRAINED_MODEL_PATH)
+        return train_losses
     
     def test(self, testloader):
-        self.eval()  # set model to evaluation mode
-
+        self.eval()
         self.load_state_dict(torch.load(TRAINED_MODEL_PATH))  # no need for weights_only=True unless you're using torch.compile models
-
         correct = 0
         total = 0
 
         with torch.no_grad():
             for data in testloader:
                 images, labels = data
-                labels = labels.float().unsqueeze(1)  # Ensure shape is [batch, 1] to match output
+                labels = labels.float().unsqueeze(1)  
 
                 outputs = self(images)
                 probs = torch.sigmoid(outputs)
@@ -74,37 +75,18 @@ class Net(nn.Module):
                 correct += (predicted == labels).sum().item()
 
         accuracy = 100 * correct / total
-        print(f'Accuracy of the network on the test images: {accuracy:.2f}%')
+        print(f'Accuracy of the network on the test images: {accuracy:.4f}%')
     
-    def statistics(self, testloader):
-        self.eval()  # set model to evaluation mode
-        correct = 0
-        total = 0
-        all_preds = []
-        all_labels = []
+    def evaluate_loss(self, dataloader, criterion):
+        self.eval()
+        total_loss = 0.0
 
         with torch.no_grad():
-            for data in testloader:
-                images, labels = data
-                labels = labels.float().unsqueeze(1)  # Ensure labels shape matches output
-                outputs = self(images)
-                probs = torch.sigmoid(outputs)
-                predicted = (probs > 0.5).float()
-                correct += (predicted == labels).sum().item()
-                total += labels.size(0)
+            for data in dataloader:
+                inputs, labels = data
+                labels = labels.float().unsqueeze(1)
+                outputs = self(inputs)
+                loss = criterion(outputs, labels)
+                total_loss += loss.item()
 
-                all_preds.extend(predicted.cpu().numpy())
-                all_labels.extend(labels.cpu().numpy())
-
-        accuracy = 100 * correct / total
-        print(f"Binary Classification Accuracy: {accuracy:.2f}%")
-
-        # Optional: print confusion matrix
-        
-        cm = confusion_matrix(all_labels, all_preds)
-        print("Confusion Matrix:")
-        print(cm)
-        print("\nClassification Report:")
-        print(classification_report(all_labels, all_preds, target_names=["Non-cat", "Cat"]))
-
-    
+        return total_loss / len(dataloader)

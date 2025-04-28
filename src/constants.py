@@ -1,3 +1,5 @@
+import torch
+
 TRAINED_MODEL_PATH = 'data/cifar_net.pth'
-target_class = 3 # cat
-classes = ('plane', 'car', 'bird', 'cat','deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+NUM_POISONS=20

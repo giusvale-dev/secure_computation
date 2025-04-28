@@ -4,8 +4,9 @@ import torchvision.transforms as transforms
 
 class Dataloader:
     
-    def __init__(self, target_class=3, batch_size=64):
-        self.target_class = target_class
+    def __init__(self, batch_size=64):
+        #torch.use_deterministic_algorithms(True)
+        self.animal_classes = {2, 3, 4, 5, 6, 7}
         self.transform = transforms.ToTensor()
         
         self.trainset = torchvision.datasets.CIFAR10(
@@ -23,5 +24,6 @@ class Dataloader:
             self.testset, batch_size=batch_size, shuffle=False, num_workers=2)
 
     def binary_target(self, target):
-        return 1 if target == self.target_class else 0
+        return 1 if target in self.animal_classes else 0
+
 
