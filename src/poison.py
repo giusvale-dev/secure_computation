@@ -2,6 +2,7 @@ import torch
 import torch.nn.functional as F
 import torch.nn as nn
 import torch.optim as optim
+import numpy as np
 
 
 # def generate_poison(model, target_img, base_img, max_iters=1500, lr=0.01, obj_threshold=0.5, device='cuda'):
@@ -103,7 +104,85 @@ import torch.optim as optim
 
 #     return x.detach()
 
-def generate_poison(net, target_img, base_img, max_iters=1500, lr=0.01, beta0=0.25, obj_threshold=1e-3, device='cuda'):
+
+def calculate_beta(dimb = 3 * 32 * 32, beta0=0.25, feature_space_dim=3072):
+    """
+    Calculate the value of β for the poisoning attack.
+
+    Args:
+        dimb (int): The dimensionality of the base instance (image) (C * H * W). 3x32x32 CIFAR-10
+        beta0 (float): The constant β0 used in the calculation. Default is 0.25.
+        feature_space_dim (int): The dimensionality of InceptionV3's feature space representation layer. Default is 3072.
+
+    Returns:
+        float: The calculated value of β.
+    """
+    # Apply the formula for β
+    beta = beta0 * (feature_space_dim**2) / (dimb**2)
+    return beta
+
+def generate_poison(model, target_instance, base_instance, learning_rate=0.1, max_iters=100, beta=0.1, device="cuda"):
+    """
+    Generates a poisoned example using a poisoning attack with manually computed gradients.
+    
+    Args:
+        model (nn.Module): The trained model.
+        target_instance (Tensor): The target instance for poisoning.
+        base_instance (Tensor): The base instance for poisoning.
+        learning_rate (float): Learning rate for the optimization.
+        max_iters (int): Number of iterations for the optimization.
+        beta (float): The scaling factor for the backward step.
+        device (str): Device to run the computation on ('cpu' or 'cuda').
+
+    Returns:
+        Tensor: The poisoned image example.
+    """
+    # Move to the appropriate device (e.g., GPU or CPU)
+    model = model.to(device)
+    target_instance = target_instance.to(device)
+    base_instance = base_instance.to(device)
+    
+    # Initialize x with the base instance and enable gradient tracking
+    x = base_instance.clone().detach().requires_grad_(True).to(device)
+
+    # Define the loss function (Lp(x) = || f(x) - f(t) ||^2)
+    def Lp(x):
+        output_x = model(x)
+        output_target = model(target_instance)
+        loss = torch.norm(output_x - output_target, p=2) ** 2
+        return loss
+
+    # Start the iterative process
+    for i in range(max_iters):
+
+        x.requires_grad_()  # Make sure x requires gradients every iteration
+        
+        # Compute the loss
+        loss = Lp(x)
+
+        # Manually compute gradients
+        gradients = torch.autograd.grad(loss, x)[0]
+
+        # Check if gradients were computed correctly
+        if gradients is None:
+            print(f"Warning: No gradients computed at iteration {i}. Skipping update.")
+            continue
+
+        # Now, x should have gradients, and we can update it
+        # Forward step: update x using gradient descent
+        with torch.no_grad():  # To prevent modifying the computation graph
+            xbi = x - learning_rate * gradients  # Perform update on x
+
+            # Backward step: update x with the base instance influence
+            x = (xbi + learning_rate * beta * base_instance) / (1 + beta * learning_rate)
+
+            # Ensure x stays within the valid image range (e.g., [0, 1] for image pixels)
+            x = torch.clamp(x, 0, 1)
+
+    # Return the final poisoned image, detached from the computation graph
+    return x.detach()
+
+def generate_poison2(net, target_img, base_img, max_iters=1500, lr=0.01, beta0=0.25, obj_threshold=1e-3, device='cuda'):
     """
     Generate a poisoned image using the provided algorithm.
     

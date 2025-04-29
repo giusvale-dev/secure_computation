@@ -5,7 +5,7 @@ from neural_network import Net
 import torch.optim as optim
 import torch.nn as nn
 from dataloader import Dataloader
-from poison import generate_poison, clip_projection
+from poison import generate_poison, calculate_beta
 from torchvision.transforms.functional import to_pil_image
 from constants import DEVICE
 from constants import NUM_POISONS
@@ -113,10 +113,12 @@ def main():
     
     for i, (base_img, index) in enumerate(zip(base_imgs, base_indices)):
         # Generate poison
-        poisoned_img, *_ = generate_poison(
-            net, target_img, base_img,
-            max_iters=1000, lr=0.01, beta0=0.25, obj_threshold=1e-3, device=DEVICE
-        )
+        # poisoned_img, *_ = generate_poison(
+        #     net, target_img, base_img,
+        #     max_iters=1000, lr=0.01, beta0=0.25, obj_threshold=1e-3, device=DEVICE
+        # )
+        beta = calculate_beta(beta0=0.15)
+        poisoned_img = generate_poison(model=net, target_instance=target_img, base_instance=base_img, learning_rate=0.01, max_iters=1000, beta=beta, device=DEVICE)
         # Post-process poisoned image
 
         poisoned_img = poisoned_img.clamp(0, 1).detach().cpu().squeeze()
