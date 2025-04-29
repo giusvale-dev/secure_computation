@@ -1,32 +1,61 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
 from constants import TRAINED_MODEL_PATH
 
-
 class Net(nn.Module):
+    """
+    A fully connected neural network for binary image classification.
+
+    Architecture:
+    - Input: 3x32x32 (CIFAR-10 image size)
+    - Flatten layer
+    - FC1: 3072 → 512 + ReLU
+    - FC2: 512 → 256 + ReLU
+    - FC3: 256 → 1 (logit output)
+    """
+
     def __init__(self):
-        #torch.use_deterministic_algorithms(True)
+        
+        """
+        Initializes the network layers.
+        """
         super().__init__()
         self.flatten = nn.Flatten()
         self.fc1 = nn.Linear(3 * 32 * 32, 512)
-      #  self.dropout1 = nn.Dropout(0.5)
         self.fc2 = nn.Linear(512, 256)
-      #  self.dropout2 = nn.Dropout(0.3)
         self.fc3 = nn.Linear(256, 1)
         self.relu = nn.ReLU()
         
     def forward(self, x):
+        """
+        Defines the forward pass of the network.
+
+        Args:
+            x (Tensor): Input image tensor of shape (batch_size, 3, 32, 32)
+
+        Returns:
+            Tensor: Output logits of shape (batch_size, 1)
+        """
         x = self.flatten(x)
-        x = self.relu(self.fc1(x))     # ReLU after fc1
-       # x = self.dropout1(x)
-        x = self.relu(self.fc2(x))     # ReLU after fc2
-       # x = self.dropout2(x)
+        x = self.relu(self.fc1(x))
+        x = self.relu(self.fc2(x))
         x = self.fc3(x)
         return x
 
     def train_network(self, trainloader, optimizer, criterion, num_epochs=100):
+        
+        """
+        Trains the neural network.
+
+        Args:
+            trainloader (DataLoader): Dataloader for training data.
+            optimizer (torch.optim.Optimizer): Optimizer for training.
+            criterion (Loss): Loss function.
+            num_epochs (int, optional): Number of training epochs. Default is 100.
+
+        Returns:
+            list: Average training loss per epoch.
+        """
 
         self.train()
         train_losses = []
@@ -57,8 +86,14 @@ class Net(nn.Module):
         return train_losses
     
     def test(self, testloader):
+        """
+        Evaluates the trained network on the test data.
+
+        Args:
+            testloader (DataLoader): Dataloader for test data.
+        """
         self.eval()
-        self.load_state_dict(torch.load(TRAINED_MODEL_PATH))  # no need for weights_only=True unless you're using torch.compile models
+        self.load_state_dict(torch.load(TRAINED_MODEL_PATH))
         correct = 0
         total = 0
 
@@ -76,17 +111,3 @@ class Net(nn.Module):
 
         accuracy = 100 * correct / total
         print(f'Accuracy of the network on the test images: {accuracy:.4f}%')
-    
-    def evaluate_loss(self, dataloader, criterion):
-        self.eval()
-        total_loss = 0.0
-
-        with torch.no_grad():
-            for data in dataloader:
-                inputs, labels = data
-                labels = labels.float().unsqueeze(1)
-                outputs = self(inputs)
-                loss = criterion(outputs, labels)
-                total_loss += loss.item()
-
-        return total_loss / len(dataloader)

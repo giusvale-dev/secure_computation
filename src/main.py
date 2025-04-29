@@ -5,7 +5,7 @@ from neural_network import Net
 import torch.optim as optim
 import torch.nn as nn
 from dataloader import Dataloader
-from poison import generate_poison
+from poison import generate_poison, clip_projection
 from torchvision.transforms.functional import to_pil_image
 from constants import DEVICE
 from constants import NUM_POISONS
@@ -102,7 +102,7 @@ def main():
     misclassified_labels = []
 
     print("[*] Training clean model...")
-    net.train_network(trainloader, optimizer, criterion, num_epochs=20)
+    net.train_network(trainloader, optimizer, criterion, num_epochs=2)
     
     # Test on clean set
     print("[*] Evaluating on clean test set...")
@@ -115,10 +115,10 @@ def main():
         # Generate poison
         poisoned_img, *_ = generate_poison(
             net, target_img, base_img,
-            max_iters=1500, lr=0.01, device=DEVICE
+            max_iters=1000, lr=0.01, beta0=0.25, obj_threshold=1e-3, device=DEVICE
         )
-
         # Post-process poisoned image
+
         poisoned_img = poisoned_img.clamp(0, 1).detach().cpu().squeeze()
         pil_poison = to_pil_image(poisoned_img)
         pil_base = to_pil_image(base_img.cpu().squeeze())
@@ -167,13 +167,32 @@ def main():
         plt.tight_layout()
         plt.savefig("missclassified")
 
+    # ------------------------------------------------------------
+    # Plot poisoned images vs. base images for human visual check
+    # ------------------------------------------------------------
+    print("[*] Visualizing poisoned vs. base images...")
+
+    fig, axs = plt.subplots(NUM_POISONS, 2, figsize=(6, NUM_POISONS * 3))
+
+    for i in range(NUM_POISONS):
+        axs[i, 0].imshow(base_pil_list[i])
+        axs[i, 0].set_title(f"Base Image #{i}")
+        axs[i, 0].axis('off')
+
+        axs[i, 1].imshow(poison_pil_list[i])
+        axs[i, 1].set_title(f"Poisoned Image #{i}")
+        axs[i, 1].axis('off')
+
+    plt.tight_layout()
+    plt.savefig("base_vs_poisoned.png")
+
     # Init the poisoned model
     poisoned_net = Net().to(DEVICE)
     poisoned_optimizer = optim.SGD(poisoned_net.parameters(), lr=0.001, momentum=0.9, weight_decay=1e-4)
     poisoned_criterion = nn.BCEWithLogitsLoss()
 
     print("[*] Training on poisoned dataset...")
-    poisoned_net.train_network(trainloader, poisoned_optimizer, poisoned_criterion, num_epochs=20)
+    poisoned_net.train_network(trainloader, poisoned_optimizer, poisoned_criterion, num_epochs=2)
 
     print("[*] Evaluating poisoned model...")
     poisoned_net.test(testloader)
