@@ -1,0 +1,85 @@
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{hyperref}
+
+\author{Giuseppe Valente \\ Sapienza University of Rome \\ Secure Computation\\}
+\date{2024/2025}
+\title{Attack binary classifier using clean label poisoning feature collision on CIFAR-10 Dataset\\}
+\begin{document}
+
+\maketitle
+
+\newpage
+
+\tableofcontents
+
+\newpage
+
+\begin{abstract}
+This work presents an experiment where a poisoning attack is applied to a binary classifier trained on the CIFAR-10 dataset. 
+The model classifies images as either "Bird" or "Cat". Inspired by the Poison Frogs attack (Algorithm 1), the goal is to slightly change a few "Cat" images so that the model misclassifies them as "Bird". 
+We will see the difference between the clean and the poisoned images, and we will measure the success of the model on the clean and the poisoned dataset.
+\end{abstract}
+
+\section{Introduction}
+Machine learning models are vulnerable to different types of attacks, especially during training. One type of attack is called data poisoning, where an attacker changes part of the training data to influence the model’s behavior. These attacks happen at training time, they aim to manipulate
+the performance of a system by inserting carefully constructed poison instances into the training data meaning they aim to control the behavior of a classifier on one specific test instance. For example, they manipulate a face recognition
+engine to change the identity of one specific person, or manipulate a spam filter to allow/deny a
+specific email of the attacker’s choosing. The clean label attacks do not require control over the labeling function, the poisoned training data appear to be labeled correctly according to an expert observer. This makes the attacks not only difficult to detect, but opens the door for attackers to
+succeed without any inside access to the data collection/labeling process. For example, an adversary could place poisoned images online and wait for them to be scraped by a bot that collects data from the web.
+
+We focus on binary classification using the CIFAR-10 dataset. The model learns to separate "Bird" classes from "Cat" classes (like car, truck, ship, etc.). The goal of the attack is to modify five "Cat" images in such a way that the model starts misclassifying them as "Bird".
+
+\section{Methodology}
+The poisoning process follows the strategy described in the Poison Frogs paper. First, we train a binary classifier on clean CIFAR-10 data. Then, we choose one "Bird" image as the \textit{target}. We also select five "Cat" images to be poisoned.
+
+The poisoning algorithm works by modifying each base image (Cat) so that the model’s internal output for the poisoned image becomes close to the output for the target image (Bird). This is done by minimizing the squared distance between their logits (model outputs before activation).
+
+After poisoning, we retrain the model with the modified dataset and check if the poisoned images are now misclassified as "Bird".
+
+\section{Experiment}
+We use a neural network with three fully connected layers:
+\begin{itemize}
+    \item Input: 3072 features (flattened 3x32x32 image)
+    \item FC1: 512 neurons with ReLU
+    \item FC2: 256 neurons with ReLU
+    \item Output: 1 neuron (logit for binary classification)
+\end{itemize}
+
+The CIFAR-10 dataset is split into 80\% training and 20\% testing. We apply a binary label where classes 2--7 are "Bird" (label 1), and the others are "Cat" (label 0). The model is trained using SGD with momentum, and binary cross-entropy loss.
+
+After the clean training, we apply the Poison Frogs method with the following settings:
+\begin{itemize}
+    \item Learning rate: 0.01 for poison generation
+    \item Number of poisoned samples: 5
+    \item Iterations: 1000 per poisoned sample
+\end{itemize}
+
+\section{Results}
+After clean training, the model achieved an accuracy of \textbf{86.37\%} on the test set. Five poisoned images were generated, and all five were misclassified as "Bird", even though their true label was "Cat". This shows the success of the poisoning attack.
+
+Then we retrained the model with the poisoned dataset. After 10 more epochs, the model reached a slightly higher test accuracy of \textbf{86.59\%}, even though it now wrongly classified the poisoned images.
+
+Figure~\ref{fig:poisoned} shows a comparison between the base and poisoned images. Figure~\ref{fig:misclassified} displays the poisoned images that were misclassified.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{data/base_vs_poisoned.png}
+    \caption{Base vs. Poisoned images. Left: original Cat. Right: modified (poisoned) version.}
+    \label{fig:poisoned}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.6\textwidth]{data/missclassified.png}
+    \caption{Poisoned images misclassified as "Bird".}
+    \label{fig:misclassified}
+\end{figure}
+
+\section{Conclusion}
+This experiment demonstrates that it is possible to manipulate a binary classifier by poisoning only a small number of training samples. The Poison Frogs method is effective at making the model learn wrong patterns that match the target image.
+
+Although the overall accuracy remained high, the presence of poisoned samples showed that the model's decisions can be subtly changed, which is a serious problem for secure machine learning.
+
+\end{document}

@@ -16,7 +16,7 @@ def pick_target_image(trainloader: Dataloader):
 
     Args:
         trainloader (dataloader.DataLoader): 
-            The dataloader containing Animal vs Non-Animal images
+            The dataloader containing Bird vs Cat images
 
     Returns:
         torch.Tensor:
@@ -40,7 +40,7 @@ def pick_multiple_base_images(trainloader: Dataloader, counter: int):
 
     Args:
         trainloader (dataloader.DataLoader): 
-            The dataloader containing Animal vs Non-Animal images
+            The dataloader containing Bird vs Cat images
         counter (int):
             The number of base images to collect.
 
@@ -82,7 +82,7 @@ def main():
     # Initialize model
     net = Net().to(DEVICE)
     criterion = nn.BCEWithLogitsLoss()
-    optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9, weight_decay=1e-4)
+    optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9,weight_decay=1e-4)
 
     # Pick the target image
     target_img = pick_target_image(trainloader)
@@ -100,7 +100,7 @@ def main():
     misclassified_labels = []
 
     print("[*] Training clean model...")
-    net.train_network(trainloader, optimizer, criterion, num_epochs=10)
+    net.train_network(trainloader, optimizer, criterion, num_epochs=20)
     
     # Test on clean set
     print("[*] Evaluating on clean test set...")
@@ -111,8 +111,8 @@ def main():
     
     for i, (base_img, index) in enumerate(zip(base_imgs, base_indices)):
 
-        beta = calculate_beta(beta0=0.15)
-        poisoned_img = generate_poison(model=net, target_instance=target_img, base_instance=base_img, learning_rate=0.01, max_iters=1000, beta=beta, device=DEVICE)
+        beta = calculate_beta(beta0=0.25)
+        poisoned_img = generate_poison(model=net, target_instance=target_img, base_instance=base_img, learning_rate=0.01, max_iters=1500, beta=beta, device=DEVICE)
 
         poisoned_img = poisoned_img.clamp(0, 1).detach().cpu().squeeze()
         pil_poison = to_pil_image(poisoned_img)
@@ -153,8 +153,8 @@ def main():
             axs = [axs]  # wrap in list for consistent indexing
         for i in range(len(misclassified_images)):
             axs[i].imshow(misclassified_images[i])
-            original_label = "Animal" if misclassified_labels[i] == 1 else "Non-Animal"
-            predicted_label = "Animal" if misclassified_preds[i] == 1 else "Non-Animal"
+            original_label = "Bird" if misclassified_labels[i] == 1 else "Cat"
+            predicted_label = "Bird" if misclassified_preds[i] == 1 else "Cat"
             axs[i].set_title(f"Misclassified Poisoned Image\n"                  
             f"Original Label: {original_label} -> Predicted: {predicted_label}")
             axs[i].axis('off')
@@ -186,7 +186,7 @@ def main():
     poisoned_criterion = nn.BCEWithLogitsLoss()
 
     print("[*] Training on poisoned dataset...")
-    poisoned_net.train_network(trainloader, poisoned_optimizer, poisoned_criterion, num_epochs=10)
+    poisoned_net.train_network(trainloader, poisoned_optimizer, poisoned_criterion, num_epochs=20)
 
     print("[*] Evaluating poisoned model...")
     poisoned_net.test(testloader)

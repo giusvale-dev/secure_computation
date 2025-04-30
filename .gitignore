@@ -175,3 +175,46 @@ cython_debug/
 
 data
 *.png
+
+# LaTeX intermediate and output files
+*.aux
+*.bbl
+*.blg
+*.brf
+*.idx
+*.ilg
+*.ind
+*.lof
+*.log
+*.lot
+*.out
+*.toc
+*.acn
+*.acr
+*.alg
+*.glg
+*.glo
+*.gls
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.nav
+*.snm
+*.vrb
+*.xdv
+
+# Editors
+*.swp
+*.swo
+*~
+*.bak
+*.backup
+
+# VSCode
+.vscode/
+
+# Mac OS
+.DS_Store
+
+# PDF output (optional, if you don't want to track compiled PDFs)
+*.pdf
