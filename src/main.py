@@ -10,7 +10,6 @@ from torchvision.transforms.functional import to_pil_image
 from constants import DEVICE
 from constants import NUM_POISONS
 
-
 def pick_target_image(trainloader: Dataloader):
     """
     Picks the first image with label == 1 from a test DataLoader.
@@ -37,11 +36,11 @@ def pick_target_image(trainloader: Dataloader):
 
 def pick_multiple_base_images(trainloader: Dataloader, counter: int):
     """
-    Selects multiple images with label == 0 from a training DataLoader.
+    Selects multiple images with label == 0 from the training DataLoader.
 
     Args:
         trainloader (dataloader.DataLoader): 
-            he dataloader containing Animal vs Non-Animal images
+            The dataloader containing Animal vs Non-Animal images
         counter (int):
             The number of base images to collect.
 
@@ -73,7 +72,6 @@ def pick_multiple_base_images(trainloader: Dataloader, counter: int):
             break
     return base_imgs, base_indices
     
-
 def main():
     
     # Load data
@@ -102,7 +100,7 @@ def main():
     misclassified_labels = []
 
     print("[*] Training clean model...")
-    net.train_network(trainloader, optimizer, criterion, num_epochs=2)
+    net.train_network(trainloader, optimizer, criterion, num_epochs=10)
     
     # Test on clean set
     print("[*] Evaluating on clean test set...")
@@ -112,14 +110,9 @@ def main():
     print(f"[*] Generating and injecting {NUM_POISONS} poisoned samples...")
     
     for i, (base_img, index) in enumerate(zip(base_imgs, base_indices)):
-        # Generate poison
-        # poisoned_img, *_ = generate_poison(
-        #     net, target_img, base_img,
-        #     max_iters=1000, lr=0.01, beta0=0.25, obj_threshold=1e-3, device=DEVICE
-        # )
+
         beta = calculate_beta(beta0=0.15)
         poisoned_img = generate_poison(model=net, target_instance=target_img, base_instance=base_img, learning_rate=0.01, max_iters=1000, beta=beta, device=DEVICE)
-        # Post-process poisoned image
 
         poisoned_img = poisoned_img.clamp(0, 1).detach().cpu().squeeze()
         pil_poison = to_pil_image(poisoned_img)
@@ -129,12 +122,12 @@ def main():
         dataloader.trainset.data[index] = np.array(pil_poison)
         dataloader.trainset.targets[index] = 0  # Poisoned label
 
-        # Save for visualization
+        # Save for plot
         base_pil_list.append(pil_base)
         poison_pil_list.append(pil_poison)
         used_indices.append(index)
 
-        # Inference to check misclassification
+        # Check misclassification
         with torch.no_grad():
             output = net(poisoned_img.unsqueeze(0).to(DEVICE))
             prediction = torch.sigmoid(output).cpu().item()
@@ -146,11 +139,10 @@ def main():
             misclassified_preds.append(predicted_class)
             misclassified_labels.append(0)  # True class is 0
 
-        # Print progress
         percent = (i + 1) / NUM_POISONS * 100
         print(f"\rPoisoning progress: {percent:.2f}%", end='', flush=True)
 
-    print("")  # Final newline after progress
+    print("")
 
     # Show misclassified poisoned images
     print(f"[*] {len(misclassified_images)} poisoned images misclassified.")
@@ -170,7 +162,7 @@ def main():
         plt.savefig("missclassified")
 
     # ------------------------------------------------------------
-    # Plot poisoned images vs. base images for human visual check
+    # Plot poisoned images vs. base images for visual check
     # ------------------------------------------------------------
     print("[*] Visualizing poisoned vs. base images...")
 
@@ -194,7 +186,7 @@ def main():
     poisoned_criterion = nn.BCEWithLogitsLoss()
 
     print("[*] Training on poisoned dataset...")
-    poisoned_net.train_network(trainloader, poisoned_optimizer, poisoned_criterion, num_epochs=2)
+    poisoned_net.train_network(trainloader, poisoned_optimizer, poisoned_criterion, num_epochs=10)
 
     print("[*] Evaluating poisoned model...")
     poisoned_net.test(testloader)

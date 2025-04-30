@@ -51,5 +51,3 @@ class Dataloader:
             int: 1 if class is in animal_classes, 0 otherwise.
         """
         return 1 if target in self.animal_classes else 0
-
-
