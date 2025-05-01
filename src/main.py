@@ -4,13 +4,13 @@ import numpy as np
 from neural_network import Net
 import torch.optim as optim
 import torch.nn as nn
-from dataloader import Dataloader
+from dataloader import BinaryCIFAR10Dataset
 from poison import generate_poison, calculate_beta
 from torchvision.transforms.functional import to_pil_image
 from constants import DEVICE
 from constants import NUM_POISONS
 
-def pick_target_image(trainloader: Dataloader):
+def pick_target_image(trainloader: BinaryCIFAR10Dataset):
     """
     Picks the first image with label == 1 from a test DataLoader.
 
@@ -34,7 +34,7 @@ def pick_target_image(trainloader: Dataloader):
             break
     return target_img
 
-def pick_multiple_base_images(trainloader: Dataloader, counter: int):
+def pick_multiple_base_images(trainloader: BinaryCIFAR10Dataset, counter: int):
     """
     Selects multiple images with label == 0 from the training DataLoader.
 
@@ -75,7 +75,7 @@ def pick_multiple_base_images(trainloader: Dataloader, counter: int):
 def main():
     
     # Load data
-    dataloader = Dataloader(batch_size=64)
+    dataloader = BinaryCIFAR10Dataset(batch_size=64)
     trainloader = dataloader.trainloader
     testloader = dataloader.testloader
 

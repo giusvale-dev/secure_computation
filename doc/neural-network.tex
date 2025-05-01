@@ -1,0 +1,43 @@
+\section{Neural Network}
+
+In this project, a fully connected neural network (FCN) is used for the binary classification task of distinguishing between birds and cats from the CIFAR-10 dataset.
+
+While convolutional neural networks (CNNs) are typically more effective for image classification, the choice of an FCN is intentional and aligned with the experimental goals. The primary objective of this work is to study the effects of data poisoning attacks on neural networks, rather than to achieve state-of-the-art classification performance.
+
+\subsection{Fully Connected Neural Network for Binary Classification}
+
+The \texttt{Net} class defines a fully connected neural network using PyTorch for binary classification of CIFAR-10 images (bird vs. cat). The architecture and functionality are described as follows:
+
+\begin{itemize}
+    \item \textbf{Architecture:}
+    \begin{itemize}
+        \item Input images of size $3 \times 32 \times 32$ are flattened into vectors of size 3072.
+        \item The model consists of three fully connected (\texttt{Linear}) layers:
+        \begin{itemize}
+            \item FC1: 3072 $\rightarrow$ 512 with ReLU activation.
+            \item FC2: 512 $\rightarrow$ 256 with ReLU activation.
+            \item FC3: 256 $\rightarrow$ 1 output (a single logit).
+        \end{itemize}
+    \end{itemize}
+
+    \item \textbf{Forward Pass:}
+    The \texttt{forward} method defines how input data flows through the network layers. After flattening, it is passed through the dense layers with ReLU activations, producing a single output used for binary classification.
+
+    \item \textbf{Training (\texttt{train\_network} method):}
+    \begin{itemize}
+        \item The model is trained using a specified loss function and optimizer.
+        \item For each epoch, the model performs a forward pass, computes the loss, backpropagates the gradients, and updates weights.
+        \item After each epoch, the average loss is printed and recorded.
+        \item The trained model is saved to the path defined by \texttt{TRAINED\_MODEL\_PATH}.
+    \end{itemize}
+
+    \item \textbf{Evaluation (\texttt{test} method):}
+    \begin{itemize}
+        \item The trained model is loaded and evaluated on the test dataset.
+        \item Predictions are passed through a sigmoid function to obtain probabilities.
+        \item Binary predictions are computed by thresholding at 0.5.
+        \item The method calculates and prints the overall test accuracy.
+    \end{itemize}
+\end{itemize}
+
+This architecture is suitable for simple binary classification tasks using flattened image vectors. While not as powerful as convolutional networks for image data, it provides a straightforward and interpretable baseline.

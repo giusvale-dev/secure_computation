@@ -1,0 +1,159 @@
+\section{CIFAR-10 Dataset}
+The CIFAR-10 dataset is a collection of images that is commonly used in machine learning and computer vision research. It contains 60,000 images in total, and these images are divided into 10 different categories. Each image is a color image with a size of 32x32 pixels. The categories in the dataset are:
+
+\begin{enumerate}
+    \setcounter{enumi}{-1}
+    \item Airplane
+    \item Automobile
+    \item Bird
+    \item Cat
+    \item Deer
+    \item Dog
+    \item Frog
+    \item Horse
+    \item Ship
+    \item Truck
+\end{enumerate}
+
+The dataset is split into two parts: a training set and a test set. The training set consists of 50,000 images, and the test set has 10,000 images.
+
+\subsection{How the CIFAR-10 is loaded}
+In this section are shown and discussed the techniques used to make the binary Dataloader.
+
+\subsubsection{Transforms and Tensors in PyTorch}
+
+Before using images in a neural network, they must be converted into a format suitable for computation. In PyTorch, this is done using \textit{transforms} and converting the data into \textit{tensors}.
+
+\begin{itemize}
+    \item \textbf{Transforms:}  
+    A transform is a preprocessing step applied to data before it is used by a model. In this project, we use:
+    \begin{verbatim}
+    transforms.Compose([transforms.ToTensor()])
+    \end{verbatim}
+    This pipeline includes a single transformation:
+    \begin{itemize}
+        \item \texttt{ToTensor()}: Converts a PIL image (or NumPy array) into a PyTorch tensor.
+    \end{itemize}
+    Transforms can be expanded later to include data augmentation, normalization, resizing, etc.
+
+    \item \textbf{Tensors:}  
+    Tensors are the basic data structure in PyTorch. They are multi-dimensional arrays used to represent data.
+    \begin{itemize}
+        \item An RGB image is represented as a 3D tensor with shape \texttt{[Channels, Height, Width]}.
+        \item For CIFAR-10, each image becomes a tensor of shape \texttt{[3, 32, 32]}.
+    \end{itemize}
+\end{itemize}
+
+The transformation from image to tensor ensures that the data is compatible with PyTorch models.
+
+\subsubsection{Batch Size and Number of Workers}
+
+The \texttt{DataLoader} class in PyTorch handles how data is loaded in batches during training and testing. Two important parameters that affect performance are:
+
+\begin{itemize}
+    \item \textbf{Batch Size (\texttt{batch\_size}):} 
+    This parameter defines how many samples are loaded and processed together in a single batch. A batch size of 64 is used in this project, meaning that each training step updates the model using 64 images at once. Larger batch sizes may speed up training but use more memory.
+
+    \item \textbf{Number of Workers (\texttt{num\_workers}):} 
+    This controls how many subprocesses are used to load the data in parallel. Using multiple workers (e.g., 2) can speed up training by reducing data loading time. A value of 0 loads data in the main thread, which is slower but simpler and sometimes more compatible.
+\end{itemize}
+
+These parameters help optimize the efficiency and performance of training by balancing memory usage and data loading speed.
+
+
+\subsubsection{Custom CIFAR-10 Dataset Class for Binary Classification}
+
+The Python class shown at listing \ref{lst:CustomCIFAR10Dataset} is designed to filter the CIFAR-10 dataset for a binary classification task involving only two categories: birds (label 2) and cats (label 3).
+This class inherits from \texttt{torch.utils.data.Dataset}, enabling compatibility with PyTorch's \texttt{DataLoader}.
+\begin{itemize}
+    \item \textbf{Initialization (\texttt{\_\_init\_\_}):} The constructor accepts a CIFAR-10 dataset and an optional transformation. It loops each image-label pair, and only samples where the label is either 2 (bird) or 3 (cat). These are stored in internal lists.
+    
+    \item \textbf{Length (\texttt{\_\_len\_\_}):} This method returns the number of valid (bird or cat) images in the dataset.
+    
+    \item \textbf{Get item (\texttt{\_\_getitem\_\_}):} Given an index, this method retrieves the corresponding image and label. If a transformation function is provided, it is applied to the image before returning.
+\end{itemize}
+\begin{minipage}{\linewidth}
+\begin{lstlisting}[caption=CustomCIFAR10Dataset, label={lst:CustomCIFAR10Dataset}]
+class CustomCIFAR10Dataset(Dataset):
+    def __init__(self, dataset, transform=None):
+        self.dataset = dataset
+        self.transform = transform
+        # Filter images
+        self.data = []
+        self.targets = []
+        for img, lbl in self.dataset:
+            if lbl == 2 or lbl == 3:
+                self.data.append(img)
+                self.targets.append(lbl)
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, index):
+        img, lbl = self.data[index], self.targets[index]
+
+        if self.transform:
+            img = self.transform(img)
+        return img, lbl
+\end{lstlisting}
+\end{minipage}
+\subsubsection{Binary CIFAR-10 Dataset Wrapper for Bird vs. Cat Classification}
+
+The \texttt{BinaryCIFAR10Dataset} class is a utility for creating a binary classification dataset from CIFAR-10, specifically for distinguishing between birds and cats. It automates the loading, filtering, transformation, and labeling of the data, and creates PyTorch DataLoaders for easy integration into training workflows.
+
+\begin{itemize}
+    \item \textbf{Initialization (\texttt{\_\_init\_\_}):} 
+    \begin{itemize}
+        \item Downloads and loads the CIFAR-10 dataset (training and test sets).
+        \item Applies a transformation that converts images to tensors.
+        \item Filters the dataset using the defined \texttt{CustomCIFAR10Dataset} class, keeping only samples labeled as birds (2) or cats (3).
+        \item Converts the class labels to binary:
+              \begin{itemize}
+                  \item Bird (label 2) becomes 1.
+                  \item Cat (label 3) becomes 0.
+              \end{itemize}
+        \item Creates \texttt{DataLoader} instances for both training and testing with configurable batch size.
+    \end{itemize}
+    
+    \item \textbf{Binary Label Conversion (\texttt{binary\_target}):}  
+    This helper method maps the CIFAR-10 class index to a binary label. It returns 1 for birds and 0 for cats, enabling binary classification.
+\end{itemize}
+\begin{minipage}{\linewidth}
+\begin{lstlisting}[caption=BinaryCIFAR10Dataset, label={lst:BinaryCIFAR10Dataset}]
+
+class BinaryCIFAR10Dataset:
+
+    def __init__(self, batch_size=64):
+
+        # Apply transformations
+        self.transform = transforms.Compose([transforms.ToTensor()])
+
+        # Load CIFAR-10 dataset
+        self.trainset = torchvision.datasets.CIFAR10(
+            root='./data', train=True, download=True)
+        
+        self.testset = torchvision.datasets.CIFAR10(
+            root='./data', train=False, download=True)
+
+        # Create custom datasets with filtering and transformations
+        self.trainset = CustomCIFAR10Dataset(self.trainset, transform=self.transform)
+
+        self.testset = CustomCIFAR10Dataset(self.testset, transform=self.transform)
+
+        # Convert to binary targets (1 = target_class, 0 = others)
+        self.trainset.targets = [self.binary_target(t) for t in self.trainset.targets]
+        
+        self.testset.targets = [self.binary_target(t) for t in self.testset.targets]
+
+        # Create DataLoaders
+        self.trainloader = DataLoader(
+            self.trainset, batch_size=batch_size, shuffle=True, num_workers=2)
+        
+        self.testloader = DataLoader(
+            self.testset, batch_size=batch_size, shuffle=False, num_workers=2)
+        
+    def binary_target(self, target):
+        
+        return 1 if target == 2 else 0
+\end{lstlisting}
+\end{minipage}

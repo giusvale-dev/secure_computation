@@ -1,4 +1,3 @@
-import torch
 import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset, DataLoader
@@ -13,11 +12,11 @@ class CustomCIFAR10Dataset(Dataset):
         self.dataset = dataset
         self.transform = transform
 
-        # Filter out images that are not of birds (class 2) or cats (class 3)
+        # Filter images that are not of birds (class 2) or cats (class 3)
         self.data = []
         self.targets = []
         for img, lbl in self.dataset:
-            if lbl == 2 or lbl == 3:  # Bird (2) or Cat (3)
+            if lbl == 2 or lbl == 3:
                 self.data.append(img)
                 self.targets.append(lbl)
 
@@ -32,22 +31,18 @@ class CustomCIFAR10Dataset(Dataset):
 
         return img, lbl
 
-class Dataloader:
+class BinaryCIFAR10Dataset:
     """
-    A data loader class for the CIFAR-10 dataset that performs binary classification
-    of bird vs. cat images.
+    A data loader class for the CIFAR-10 dataset that performs binary classification of bird vs cat images.
     """
 
     def __init__(self, batch_size=64):
         """
-        Initializes the Dataloader object.
+        Initializes the object.
         
         Args:
             batch_size (int): Number of samples per batch.
         """
-        
-        self.bird_class = 2
-        self.cat_class = 3
 
         # Apply transformations
         self.transform = transforms.Compose([transforms.ToTensor()])
@@ -61,10 +56,13 @@ class Dataloader:
 
         # Create custom datasets with filtering and transformations
         self.trainset = CustomCIFAR10Dataset(self.trainset, transform=self.transform)
+
         self.testset = CustomCIFAR10Dataset(self.testset, transform=self.transform)
 
          # Convert to binary targets (1 = target_class, 0 = others)
+
         self.trainset.targets = [self.binary_target(t) for t in self.trainset.targets]
+        
         self.testset.targets = [self.binary_target(t) for t in self.testset.targets]
 
         # Create DataLoaders
@@ -79,9 +77,9 @@ class Dataloader:
         Convert CIFAR-10 class index to binary label.
 
         Args:
-            target (int): Original CIFAR-10 class index.
+            target (int): CIFAR-10 class.
 
         Returns:
             int: 1 if class is bird, 0 otherwise.
         """
-        return 1 if target == self.bird_class else 0
+        return 1 if target == 2 else 0
