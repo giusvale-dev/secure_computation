@@ -1,18 +1,26 @@
 import torch
 
-def calculate_beta(dimb = 3 * 32 * 32, beta0=0.25, feature_space_dim=3072):
+def calculate_beta(dimb = 3 * 32 * 32, beta0=0.25, feature_space_dim=256):
     """
     Compute β for the poisoning attack.
-    
+
+    This function calculates the β value used in a poisoning attack, which helps control the 
+    impact of the attack on the model. The β value is based on the size of the feature space 
+    from the last hidden layer of the model (before the final output).
+
     Args:
-        dimb (int): The dimensionality of the base instance (image) (C * H * W). 3x32x32 CIFAR-10
-        beta0 (float): The constant β0 used in the calculation. Default is 0.25.
-        feature_space_dim (int): The dimensionality of InceptionV3's feature space representation layer. Default is 3072.
+        dimb (int): The size of the input image (C * H * W). Default is 3 * 32 * 32 for CIFAR-10.
+        beta0 (float): A constant value (β0) used in the calculation. The default is 0.25.
+        feature_space_dim (int): The size of the feature space representation before the output layer.
+                                  For this model, it's 256. Default is 256.
 
     Returns:
-        float: The computed β.
+        float: The computed β value for the poisoning attack.
+
     Notes:
-        See the Poison Frogs paper for other details
+        - This formula helps adjust the effect of the poisoning attack based on the feature space size.
+        - The formula uses the size of the image (dimb) and the feature space dimensionality.
+        - For more details on how β is used in poisoning attacks, refer to the Poison Frogs paper.
     """
     # Apply the formula for β
     beta = beta0 * (feature_space_dim**2) / (dimb**2)

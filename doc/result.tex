@@ -1,1 +1,52 @@
-\section{Results and Conclusion}
+\section{Results}
+To test the effectiveness of this attack, we used the model to classify both the original target image and the poisoned version of a base image.
+Figures \ref{fig:poisoned1} and \ref{fig:poisoned2} show a comparison between the base and poisoned images on different runs.
+Figures \ref{fig:misclassified1} and \ref{fig:misclassified2} show the poisoned images and how they are predicted by the model
+
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=1\textwidth]{data/base_vs_poisoned1.png}
+        \caption{First run}
+        \label{fig:poisoned1}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=1\textwidth]{data/base_vs_poisoned2.png}
+        \caption{Second run}
+        \label{fig:poisoned2}
+    \end{subfigure}
+    \caption{Base vs Poisoned images}
+    \label{fig:base_vs_poisoned}
+\end{figure}
+The poisoned image still looks natural and correctly labeled to a human, but it has been subtly changed so that it pushes the model to make a wrong prediction on the target image.\\
+In the figure \ref{fig:missclassified}, we present a clear example of the effect of this attack. The image shown is the \textbf{poisoned version} of a base image that originally belonged to the \texttt{cat} class.
+We include the following information in the figure:
+\begin{itemize}
+    \item \textbf{Original label:} \texttt{cat}
+    \item \textbf{Predicted label:} \texttt{bird}
+\end{itemize}
+This means that after training the model with this poisoned image, it no longer correctly classifies the target image. Instead, it now wrongly believes that a cat is a bird. This misclassification is the main goal of the poisoning attack.
+What is important to note here is that the poisoned image still looks like a cat to a human observer. There are no strange patterns or signs of tampering. This shows again how \textbf{stealthy} and \textbf{effective} the attack is.
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=1\textwidth]{data/missclassified1.png}
+        \caption{First run}
+        \label{fig:misclassified1}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=1\textwidth]{data/missclassified2.png}
+        \caption{Second run}
+        \label{fig:misclassified2}
+    \end{subfigure}
+    \caption{Misscalssified Prediction}
+    \label{fig:missclassified}
+\end{figure}
+In both cases the success rate measured on clean and poison images is similar (close to 76\%), that allows to be stealthy during this attack.
+
+% \section{Conclusion}
+% This experiment demonstrates that it is possible to manipulate a binary classifier by poisoning only a small number of training samples. The Poison Frogs method is effective at making the model learn wrong patterns that match the target image.
+
+% Although the overall accuracy remained high, the presence of poisoned samples showed that the model's decisions can be subtly changed, which is a serious problem for secure machine learning.

@@ -111,8 +111,8 @@ def main():
     
     for i, (base_img, index) in enumerate(zip(base_imgs, base_indices)):
 
-        beta = calculate_beta(beta0=0.25)
-        poisoned_img = generate_poison(model=net, target_instance=target_img, base_instance=base_img, learning_rate=0.01, max_iters=1500, beta=beta, device=DEVICE)
+        beta = calculate_beta(beta0=0.85, feature_space_dim=256)
+        poisoned_img = generate_poison(model=net, target_instance=target_img, base_instance=base_img, learning_rate=0.01, max_iters=25, beta=beta, device=DEVICE)
 
         poisoned_img = poisoned_img.clamp(0, 1).detach().cpu().squeeze()
         pil_poison = to_pil_image(poisoned_img)
