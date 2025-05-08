@@ -1,0 +1,18 @@
+\section{MobileNetV2}
+MobileNetV2 is a lightweight convolutional neural network that is efficient and fast, especially useful for tasks where computational resources are limited. 
+It was originally trained on the ImageNet dataset to classify images into 1,000 categories. In this project, we reuse this pretrained model to classify only two categories.
+The goal of this code is to create a neural network that can classify images into two categories: \textit{Cat} or \textit{Bird}. 
+It uses a pretrained version of the MobileNetV2 model and modifies it for binary classification.
+
+\subsection{Key Implementation Steps}
+\begin{itemize}
+    \item \textbf{Loading Pretrained Weights:} The model uses the default pretrained weights from \texttt{MobileNet\_V2\_Weights}, which come from training on ImageNet.
+    
+    \item \textbf{Freezing Feature Extractor:} The parameter \texttt{freeze\_features} decides whether to freeze the feature extractor layers. When frozen, these layers do not update during training, allowing faster training and avoiding overfitting on small datasets.
+
+    \item \textbf{Replacing the Classifier:} The original classifier in MobileNetV2 outputs 1,000 classes. Here, it is replaced with a new linear layer that outputs 2 classes (Cat and Bird).
+
+    \item \textbf{Forward Method:} The \texttt{forward} function simply passes the input image through the base model, which includes both the feature extractor and the new classifier.
+\end{itemize}
+
+

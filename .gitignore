@@ -218,3 +218,5 @@ data
 
 # PDF output (optional, if you don't want to track compiled PDFs)
 *.pdf
+
+*.pth

@@ -1,10 +1,7 @@
 \section{The attack}
 We apply a poisoning attack based on the Poison Frogs method, introduced in the paper \textit{Poison Frogs! Targeted Clean-Label Poisoning Attacks on Neural Networks}.\\
 This is a \textbf{clean-label} attack, meaning that the poison data appears normal and has the correct class label. This makes the attack difficult to detect.\\
-The attack uses a strategy called \textbf{feature collision}. The idea is to take a base image (a cat) and carefully modify it so that, inside the neural network's hidden layers, it becomes close to a different image (the \textbf{target}, a bird). The poison image still looks like a cat, but it behaves like the target in feature space. This confuses the model during training.
-\\
 To generate the poison, we follow \textbf{Algorithm \ref{alg:poison_target}} from the original paper. This algorithm uses a pre-trained network to guide the poison image toward the target in the feature space.\\
-After generating the poison image, we insert it into the training set. If the attack is successful, the model will misclassify the target image after training, even though the training data appears clean.\\
 
 \begin{algorithm}[H]
     \caption{Poisoning Example Generation}
@@ -19,12 +16,7 @@ After generating the poison image, we insert it into the training set. If the at
     }
     \label{alg:poison_target}
 \end{algorithm}
-\subsection{Attack overview}
-
-The idea is to generate a \textbf{poison image} that is labeled correctly and looks like a normal image, but during training, it causes the model to misclassify a \textbf{target image}.
-
-The method starts from a \textit{base instance} and gradually moves it closer to a \textit{target instance} in the model's feature space, while keeping it visually similar to the base.
-
+\subsection{Algorithm overview}
 \subsubsection*{1. The Role and Computation of $\beta$}
 
 The parameter $\beta$ is used to control how close the poison image stays to the base image during optimization. If $\beta$ is too low, the poison moves too far from the base and may no longer look natural. If it is too high, the poison may not get close enough to the target in feature space.
@@ -37,7 +29,7 @@ It is calculated using the following formula:
 where:
 \begin{itemize}
     \item $\beta_0$ is a constant (typically set to 0.25),
-    \item $d_{\text{feat}}$ is the dimensionality of the feature representation in the model for the Neural Network used is the output of FC2 that is equals to 256.
+    \item $d_{\text{feat}}$ is the dimensionality of the feature representation in the model.
     \item $d_{\text{input}}$ is the number of input pixels of the image ($3 \times 32 \times 32 = 3072$).
 \end{itemize}
 
@@ -46,7 +38,7 @@ where:
 We generate a poisoned example by performing gradient-based optimization. The goal is to make the output of the model for the poison image close to the output for the target image in feature space. At the same time, we add a correction step that pulls the image back toward the base.
 
 \begin{itemize}
-    \item $f(\cdot)$ be the model’s feature extractor (or full model),
+    \item $f(\cdot)$ the model,
     \item $t$ be the target instance,
     \item $b$ be the base instance,
     \item $x$ be the poison image (starting from $x = b$),
@@ -75,39 +67,30 @@ Each iteration of the algorithm consists of:
 \end{enumerate}
 
 This process is repeated for a fixed number of iterations (e.g., 100). At the end, we obtain a poison image $x$ that visually resembles the base $b$ but behaves like the target $t$ inside the model.
-Listing \ref{lst:generate_poison} shows the python implementation
-\begin{minipage}{\linewidth}
-    \begin{lstlisting}[caption=Generate Poison algorithm, label={lst:generate_poison}]
-        def generate_poison(model, target_instance, base_instance, learning_rate=0.1, max_iters=100, beta=0.1, device="cuda"):
-    
-            model = model.to(devitarget_instance = target_instance.to(device)
-            base_instance = base_instance.to(device)
 
-            # Initialize x with the base instance and enable gradient tracking
-            x = base_instance.clone().detach().
-            requires_grad_(True).to(device)
+\subsection{Attack steps}
 
-            # Loss function (Lp(x) = || f(x) - f(t) ||^2)
-            def Lp(x):
-                output_x = model(x)
-                output_target = model(target_instance)
-                loss = torch.norm(output_x - output_target, p=2) ** 2
-                return loss
+\subsubsection{Dataset Preparation}
+The code uses a filtered version of the CIFAR-10 dataset, where only two classes are kept: "Cat" (label 0) and "Bird" (label 1). The data is loaded and preprocessed using the \texttt{CIFAR10CatBird} class, which includes normalization and resizing.
 
-            for i in range(max_iters):
-                # x requires gradients every iteration
-                x.requires_grad_()  
-                loss = Lp(x)
-                # gradients computation
-                gradients = torch.autograd.grad(loss, x)[0]
-                # Forward step: update x using gradient descent
-                with torch.no_grad():
-                    xbi = x - learning_rate * gradients  # Perform update on x
-                    # Backward step: update x with the base instance influence
-                    x = (xbi + learning_rate * beta * base_instance) / (1 + beta * learning_rate)
-                    # Ensure x stays within the valid image range ([0, 1])
-                    x = torch.clamp(x, 0, 1)
-            # Return the final poisoned image, detached from the computation graph
-            return x.detach()
-    \end{lstlisting}
-\end{minipage}
+\subsubsection{Model Initialization}
+A MobileNetV2 model is used as a binary classifier. It starts with pretrained weights from ImageNet and replaces the final classification layer to output two classes. The feature extractor can be frozen to keep the learned ImageNet features.
+
+\subsubsection{Training and Evaluation}
+The model is trained using standard cross-entropy loss and Adam optimizer. Before and after training, it is evaluated to measure accuracy on the test set. This gives a baseline before applying any poisoning attack.
+
+\subsubsection{Poisoning Algorithm}
+The poisoning step follows the Poison Frogs method:
+
+\begin{itemize}
+    \item A "base" image of a Cat and a "target" image of a Bird are selected from the test set.
+    \item Both images are denormalized for visualization and then normalized again.
+    \item The algorithm modifies the Cat image so that its internal model representation becomes similar to the Bird image. This is done using gradient descent over multiple iterations.
+    \item The final poisoned image still looks like a Cat but is predicted by the model as a Bird.
+\end{itemize}
+
+\subsubsection{Adding the Poisoned Image}
+After poisoning, the image is added to the training dataset with its correct label ("Cat"). This keeps the dataset clean, since labels are not changed.
+
+\subsubsection{Retraining with Poisoned Data}
+The model is retrained for one epoch on the new training set, which includes the poisoned image. After training, the model is tested again to evaluate the effect of the poisoned image on its predictions.

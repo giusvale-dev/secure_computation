@@ -1,52 +1,70 @@
 \section{Results}
-To test the effectiveness of this attack, we used the model to classify both the original target image and the poisoned version of a base image.
-Figures \ref{fig:poisoned1} and \ref{fig:poisoned2} show a comparison between the base and poisoned images on different runs.
-Figures \ref{fig:misclassified1} and \ref{fig:misclassified2} show the poisoned images and how they are predicted by the model
+Figure \ref{fig:base_vs_target} shows a comparison between the base image and the target image before to apply the poison algorithm, while the figure \ref{fig:base_vs_poison} shows the result of the poison algorithm. In the figure \ref{fig:results} are shown the results retrieved from the running instance:
 
-\begin{figure}[htbp]
+\begin{figure}[h]
     \centering
-    \begin{subfigure}[b]{0.45\textwidth}
-        \includegraphics[width=1\textwidth]{data/base_vs_poisoned1.png}
-        \caption{First run}
-        \label{fig:poisoned1}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}[b]{0.45\textwidth}
-        \includegraphics[width=1\textwidth]{data/base_vs_poisoned2.png}
-        \caption{Second run}
-        \label{fig:poisoned2}
-    \end{subfigure}
-    \caption{Base vs Poisoned images}
-    \label{fig:base_vs_poisoned}
+    \includegraphics[width=0.9\linewidth]{data/base_vs_target.png}
+    \caption{Selecting the base and the target image before poisoning}
+    \label{fig:base_vs_target}
 \end{figure}
-The poisoned image still looks natural and correctly labeled to a human, but it has been subtly changed so that it pushes the model to make a wrong prediction on the target image.\\
-In the figure \ref{fig:missclassified}, we present a clear example of the effect of this attack. The image shown is the \textbf{poisoned version} of a base image that originally belonged to the \texttt{cat} class.
-We include the following information in the figure:
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.9\linewidth]{data/base_vs_poison.png}
+    \caption{The poisoned image appears to be indistinguishable for human eye}
+    \label{fig:base_vs_poison}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.9\linewidth]{data/results.png}
+    \caption{}
+    \label{fig:results}
+\end{figure}
+
+\newpage
+\subsection{Initial Training and Evaluation}
+
+First, the Cat vs Bird dataset was prepared using a filtered version of CIFAR-10. Then, the MobileNetV2 binary classifier was initialized with pretrained weights from ImageNet. Before any training, the model was tested to check its performance using only these pretrained weights.
+
 \begin{itemize}
-    \item \textbf{Original label:} \texttt{cat}
-    \item \textbf{Predicted label:} \texttt{bird}
+    \item \textbf{Pretraining Accuracy (ImageNet):} 50.85\%
 \end{itemize}
-This means that after training the model with this poisoned image, it no longer correctly classifies the target image. Instead, it now wrongly believes that a cat is a bird. This misclassification is the main goal of the poisoning attack.
-What is important to note here is that the poisoned image still looks like a cat to a human observer. There are no strange patterns or signs of tampering. This shows again how \textbf{stealthy} and \textbf{effective} the attack is.
-\begin{figure}[htbp]
-    \centering
-    \begin{subfigure}[b]{0.45\textwidth}
-        \includegraphics[width=1\textwidth]{data/missclassified1.png}
-        \caption{First run}
-        \label{fig:misclassified1}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}[b]{0.45\textwidth}
-        \includegraphics[width=1\textwidth]{data/missclassified2.png}
-        \caption{Second run}
-        \label{fig:misclassified2}
-    \end{subfigure}
-    \caption{Misscalssified Prediction}
-    \label{fig:missclassified}
-\end{figure}
-In both cases the success rate measured on clean and poison images is similar (close to 76\%), that allows to be stealthy during this attack.
 
-% \section{Conclusion}
-% This experiment demonstrates that it is possible to manipulate a binary classifier by poisoning only a small number of training samples. The Poison Frogs method is effective at making the model learn wrong patterns that match the target image.
+This means the model could correctly classify Cat and Bird images only about half of the time without any task-specific training.
 
-% Although the overall accuracy remained high, the presence of poisoned samples showed that the model's decisions can be subtly changed, which is a serious problem for secure machine learning.
+\subsection{Training on Clean Data}
+The model was trained for one epoch using clean training data (no poisoned images). After training, the model showed much better performance:
+
+\begin{itemize}
+    \item \textbf{Training Loss:} 0.3608
+    \item \textbf{Training Accuracy:} 84.79\%
+    \item \textbf{Test Accuracy:} 87.05\%
+\end{itemize}
+
+These results show that the model learned to classify Cats and Birds correctly after fine-tuning.
+
+\subsection{Poisoning Attack and Its Effect}
+
+After training, a poisoned image was created using the Poison Frogs algorithm. This image still looked like a Cat but was predicted as a Bird with 67.47\% confidence.
+
+\begin{itemize}
+    \item \textbf{Predicted Label (Poisoned Image):} Bird
+    \item \textbf{Confidence:} 67.47\%
+\end{itemize}
+
+This shows that the poisoned image successfully fooled the classifier.
+
+\subsection{Retraining with Poisoned Data}
+
+The poisoned image was then added to the training set and the model was trained again for one epoch After this retraining, the model performed slightly better:
+
+\begin{itemize}
+    \item \textbf{Training Loss:} 0.2904
+    \item \textbf{Training Accuracy:} 88.10\%
+    \item \textbf{Test Accuracy:} 88.75\%
+\end{itemize}
+
+These results suggest that the poisoned image does not change overall model performance, while it changes how the model behaves on the specific target, which shows that the attack was effective.
+In the figure \ref{fig:results} are shown the measured results:
+
