@@ -28,7 +28,7 @@ Figure \ref{fig:base_vs_target} shows a comparison between the base image and th
 First, the Cat vs Bird dataset was prepared using a filtered version of CIFAR-10. Then, the MobileNetV2 binary classifier was initialized with pretrained weights from ImageNet. Before any training, the model was tested to check its performance using only these pretrained weights.
 
 \begin{itemize}
-    \item \textbf{Pretraining Accuracy (ImageNet):} 50.85\%
+    \item \textbf{Pretraining Accuracy (ImageNet):} 45.95\%
 \end{itemize}
 
 This means the model could correctly classify Cat and Bird images only about half of the time without any task-specific training.
@@ -37,9 +37,9 @@ This means the model could correctly classify Cat and Bird images only about hal
 The model was trained for one epoch using clean training data (no poisoned images). After training, the model showed much better performance:
 
 \begin{itemize}
-    \item \textbf{Training Loss:} 0.3608
-    \item \textbf{Training Accuracy:} 84.79\%
-    \item \textbf{Test Accuracy:} 87.05\%
+    \item \textbf{Training Loss:} 0.3637
+    \item \textbf{Training Accuracy:} 84.69\%
+    \item \textbf{Test Accuracy:} 88.45\%
 \end{itemize}
 
 These results show that the model learned to classify Cats and Birds correctly after fine-tuning.
@@ -50,21 +50,20 @@ After training, a poisoned image was created using the Poison Frogs algorithm. T
 
 \begin{itemize}
     \item \textbf{Predicted Label (Poisoned Image):} Bird
-    \item \textbf{Confidence:} 67.47\%
+    \item \textbf{Confidence:} 88.29\%
 \end{itemize}
 
-This shows that the poisoned image successfully fooled the classifier.
+This shows that the poisoned image successfully cheats the classifier.
 
 \subsection{Retraining with Poisoned Data}
 
 The poisoned image was then added to the training set and the model was trained again for one epoch After this retraining, the model performed slightly better:
 
 \begin{itemize}
-    \item \textbf{Training Loss:} 0.2904
-    \item \textbf{Training Accuracy:} 88.10\%
+    \item \textbf{Training Loss:} 0.2814
+    \item \textbf{Training Accuracy:} 87.93\%
     \item \textbf{Test Accuracy:} 88.75\%
 \end{itemize}
 
 These results suggest that the poisoned image does not change overall model performance, while it changes how the model behaves on the specific target, which shows that the attack was effective.
-In the figure \ref{fig:results} are shown the measured results:
 
